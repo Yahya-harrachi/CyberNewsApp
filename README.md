@@ -56,8 +56,8 @@ npx expo start
 - Scan QR code with Expo Go app
 
 ## 📊 Project Management
-- **Taiga Board**: [Your Taiga Link]
-- **Repository**: [Your Git Link]
+- **Taiga Board**: https://tree.taiga.io/project/yahya-msillane-cybernews/kanban
+- **Repository**: https://github.com/yahya-msillane/CyberNewsApp
 
 ## ✅ Sprint 1 - COMPLETED
 - ✅ Project initialization
@@ -69,4 +69,4 @@ npx expo start
 ## 📅 Academic Information
 - **Course**: Développement Mobile - React Native
 - **Professor**: Pr. Zineb.nj
-- **Year**: 2025-2026
+- **Year**: 2025-202
