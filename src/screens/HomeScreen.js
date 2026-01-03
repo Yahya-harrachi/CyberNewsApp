@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Image
+} from 'react-native';
 import { getTopHeadlines } from '../services/newsApi';
 // import { getMockBreakingNews } from '../services/mockData'; // Use this if you want to test with mock data
 
@@ -15,13 +23,13 @@ export default function HomeScreen({ navigation }) {
   const fetchNews = async () => {
     setLoading(true);
     setError(null);
-    
+
     // Use real API
     const result = await getTopHeadlines('us');
-    
+
     // Or use mock data for testing:
     // const result = await getMockBreakingNews();
-    
+
     if (result.success) {
       setNews(result.articles.slice(0, 5)); // Get first 5 articles
     } else {
@@ -53,13 +61,20 @@ export default function HomeScreen({ navigation }) {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>🏠 Breaking News</Text>
-      
+
       {news.map((article, index) => (
-        <TouchableOpacity 
+        <TouchableOpacity
           key={index}
           style={styles.card}
           onPress={() => navigation.navigate('ArticleDetail', { article })}
         >
+          {article.urlToImage ? (
+            <Image
+              source={{ uri: article.urlToImage }}
+              style={styles.cardImage}
+              resizeMode="cover"
+            />
+          ) : null}
           <Text style={styles.cardTitle}>{article.title}</Text>
           <Text style={styles.cardSource}>{article.source.name}</Text>
           <Text style={styles.cardDate}>
@@ -67,8 +82,8 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </TouchableOpacity>
       ))}
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate('ArticleDetail')}
       >
@@ -129,6 +144,13 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     alignItems: 'center',
   },
+  cardImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+
   buttonText: {
     color: '#fff',
     fontSize: 16,

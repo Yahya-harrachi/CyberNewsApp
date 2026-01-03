@@ -1,5 +1,5 @@
 // API Configuration
-export const API_KEY = '62899b2aa7974f968536fbab11560fe5'; // Replace with your actual API key
+export const API_KEY = 'b71d31010f844f68a1c59d781570a78c'; // Replace with your actual API key
 export const BASE_URL = 'https://newsapi.org/v2';
 
 // API Endpoints
