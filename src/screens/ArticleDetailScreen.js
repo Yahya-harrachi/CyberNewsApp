@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -7,12 +7,54 @@ import {
   ScrollView, 
   Image,
   Linking,
-  Share
+  Share,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+// Update this import path based on where you placed bookmarkStorage.js
+// If in services folder: '../services/bookmarkStorage'
+// If in utils folder: '../utils/bookmarkStorage'
+import { 
+  addBookmarkToStorage, 
+  removeBookmarkFromStorage, 
+  isArticleBookmarked 
+} from './bookmarkStorage';
 
 export default function ArticleDetailScreen({ navigation, route }) {
   const { article } = route.params || {};
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    checkBookmarkStatus();
+  }, [article]);
+
+  const checkBookmarkStatus = async () => {
+    if (article) {
+      const bookmarked = await isArticleBookmarked(article.url);
+      setIsBookmarked(bookmarked);
+    }
+  };
+
+  const toggleBookmark = async () => {
+    setLoading(true);
+    try {
+      if (isBookmarked) {
+        await removeBookmarkFromStorage(article.url);
+        setIsBookmarked(false);
+        Alert.alert("Removed", "Article removed from bookmarks");
+      } else {
+        await addBookmarkToStorage(article);
+        setIsBookmarked(true);
+        Alert.alert("Saved", "Article saved to bookmarks");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to update bookmark");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!article) {
     return (
@@ -53,6 +95,19 @@ export default function ArticleDetailScreen({ navigation, route }) {
           resizeMode="cover"
         />
       ) : null}
+
+      {/* Bookmark Button Overlay */}
+      <TouchableOpacity 
+        style={styles.bookmarkButton}
+        onPress={toggleBookmark}
+        disabled={loading}
+      >
+        <Ionicons 
+          name={isBookmarked ? "bookmark" : "bookmark-outline"} 
+          size={28} 
+          color={isBookmarked ? "#007AFF" : "#fff"} 
+        />
+      </TouchableOpacity>
 
       <View style={styles.contentContainer}>
         <Text style={styles.title}>{article.title}</Text>
@@ -119,6 +174,23 @@ const styles = StyleSheet.create({
   headerImage: {
     width: '100%',
     height: 250,
+  },
+  bookmarkButton: {
+    position: 'absolute',
+    top: 200,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   contentContainer: {
     padding: 16,

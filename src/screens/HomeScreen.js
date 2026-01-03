@@ -53,11 +53,16 @@ export default function HomeScreen({ navigation }) {
         return hasImage && isCyber;
       });
       
-      setNews(filteredArticles.slice(0, 100)); // Get first 20 filtered articles
+      setNews(filteredArticles.slice(0, 20)); // Get first 20 filtered articles
     } else {
       setError(result.error);
     }
     setLoading(false);
+  };
+
+  const handleArticlePress = (article) => {
+    console.log('Navigating to article:', article.title);
+    navigation.navigate('ArticleDetail', { article });
   };
 
   if (loading) {
@@ -100,16 +105,16 @@ export default function HomeScreen({ navigation }) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>🔒 CyberNews</Text>
+        <Text style={styles.title}>🔐 CyberNews</Text>
         <Text style={styles.subtitle}>Latest cybersecurity & tech security news</Text>
         <Text style={styles.count}>{news.length} articles found</Text>
       </View>
 
       {news.map((article, index) => (
         <TouchableOpacity
-          key={index}
+          key={`${article.url}-${index}`}
           style={styles.card}
-          onPress={() => navigation.navigate('ArticleDetail', { article })}
+          onPress={() => handleArticlePress(article)}
         >
           <Image
             source={{ uri: article.urlToImage }}

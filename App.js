@@ -1,20 +1,105 @@
+// App.js or your main navigation file
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 // Import screens
-import HomeScreen from './src/screens/HomeScreen';
-import DiscoverScreen from './src/screens/DiscoverScreen';
-import BookmarkScreen from './src/screens/BookmarkScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import ArticleDetailScreen from './src/screens/ArticleDetailScreen';
+import HomeScreen from './src/screens/HomeScreen.js';
+import DiscoverScreen from './src/screens/DiscoverScreen.js';
+import BookmarkScreen from './src/screens/BookmarkScreen.js';
+import ProfileScreen from './src/screens/ProfileScreen.js';
+import ArticleDetailScreen from './src/screens/ArticleDetailScreen.js';
 
-const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-// Bottom Tab Navigator with 4 tabs
+// Home Stack Navigator (includes ArticleDetail)
+function HomeStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="HomeMain" 
+        component={HomeScreen}
+        options={{ 
+          headerShown: false 
+        }}
+      />
+      <Stack.Screen 
+        name="ArticleDetail" 
+        component={ArticleDetailScreen}
+        options={{ 
+          title: 'Article',
+          headerBackTitle: 'Back'
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Discover Stack Navigator
+function DiscoverStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="DiscoverMain" 
+        component={DiscoverScreen}
+        options={{ 
+          headerShown: false 
+        }}
+      />
+      <Stack.Screen 
+        name="ArticleDetail" 
+        component={ArticleDetailScreen}
+        options={{ 
+          title: 'Article',
+          headerBackTitle: 'Back'
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Bookmark Stack Navigator
+function BookmarkStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="BookmarkMain" 
+        component={BookmarkScreen}
+        options={{ 
+          headerShown: false 
+        }}
+      />
+      <Stack.Screen 
+        name="ArticleDetail" 
+        component={ArticleDetailScreen}
+        options={{ 
+          title: 'Article',
+          headerBackTitle: 'Back'
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Profile Stack Navigator
+function ProfileStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="ProfileMain" 
+        component={ProfileScreen}
+        options={{ 
+          headerShown: false 
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Main Tab Navigator
 function TabNavigator() {
   return (
     <Tab.Navigator
@@ -35,74 +120,23 @@ function TabNavigator() {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E5EA',
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: '#007AFF',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        tabBarInactiveTintColor: 'gray',
+        headerShown: false,
       })}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen}
-        options={{ title: 'CyberNews' }}
-      />
-      <Tab.Screen 
-        name="Discover" 
-        component={DiscoverScreen}
-        options={{ title: 'Discover' }}
-      />
-      <Tab.Screen 
-        name="Bookmark" 
-        component={BookmarkScreen}
-        options={{ title: 'Bookmarks' }}
-      />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen}
-        options={{ title: 'Profile' }}
-      />
+      <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen name="Discover" component={DiscoverStack} />
+      <Tab.Screen name="Bookmark" component={BookmarkStack} />
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 }
 
-// Main Stack Navigator (includes tabs + detail screen)
+// Main App Component
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen 
-          name="MainTabs" 
-          component={TabNavigator} 
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen 
-          name="ArticleDetail" 
-          component={ArticleDetailScreen}
-          options={{ 
-            title: 'Article Details',
-            headerStyle: {
-              backgroundColor: '#007AFF',
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        />
-      </Stack.Navigator>
+      <TabNavigator />
     </NavigationContainer>
   );
 }
