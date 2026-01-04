@@ -143,19 +143,7 @@ export default function LoginScreen() {
                     )}
                 </TouchableOpacity>
 
-                <View style={styles.divider}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>Or continue with</Text>
-                    <View style={styles.dividerLine} />
-                </View>
-
-                <TouchableOpacity
-                    disabled={!request || loading}
-                    onPress={() => promptAsync()}
-                    style={[styles.googleButton, loading && styles.disabledButton]}
-                >
-                    <Text style={styles.googleButtonText}>Sign in with Google</Text>
-                </TouchableOpacity>
+                
 
                 <View style={styles.signupContainer}>
                     <Text style={styles.signupText}>Don't have an account? </Text>
