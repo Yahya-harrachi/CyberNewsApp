@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -12,15 +12,27 @@ import { Ionicons, MaterialIcons, FontAwesome, Feather } from '@expo/vector-icon
 import { AuthContext } from '../../Context/AuthContext';
 
 export default function ProfileScreen() {
-  const { user, logout } = React.useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       "Logout",
       "Are you sure you want to logout?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Logout", onPress: logout, style: "destructive" }
+        { 
+          text: "Logout", 
+          onPress: async () => {
+            try {
+              await logout();
+              // No navigation needed - AuthContext will update user state to null
+              // and your navigation should automatically show the login screen
+            } catch (error) {
+              Alert.alert("Logout Error", "Failed to logout. Please try again.");
+            }
+          }, 
+          style: "destructive" 
+        }
       ]
     );
   };
@@ -150,7 +162,7 @@ export default function ProfileScreen() {
         <View style={[styles.menuIcon, { backgroundColor: '#FF3B30' + '20' }]}>
           <MaterialIcons name="logout" size={24} color="#FF3B30" />
         </View>
-        <Text onPress={logout} style={[styles.menuText, { color: '#FF3B30' }]}>Logout</Text>
+        <Text style={[styles.menuText, { color: '#FF3B30' }]}>Logout</Text>
       </TouchableOpacity>
 
       {/* App Info */}
@@ -312,7 +324,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#007AFF' + '20', // 20 is for 20% opacity in hex
+    backgroundColor: '#007AFF' + '20',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,

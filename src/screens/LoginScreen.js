@@ -1,11 +1,12 @@
+import React, { useContext, useEffect, useState } from 'react';
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
     ActivityIndicator,
+    StyleSheet,
 } from "react-native";
-import { useContext, useEffect, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import {
@@ -15,33 +16,33 @@ import {
     signInWithCredential,
 } from "firebase/auth";
 import { auth } from "../../database/firebase";
-//import { ThemeContext } from "../../Context/ThemeContext";
+import { useNavigation } from '@react-navigation/native';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
 export default function LoginScreen() {
-    //const { theme, toggleTheme } = useContext(ThemeContext);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const navigation = useNavigation();
 
-    // 🔑 Google Auth (WEB – Expo)
+    // Google Auth
     const [request, response, promptAsync] = Google.useAuthRequest({
         clientId: WEB_CLIENT_ID,
         responseType: "id_token",
         scopes: ["profile", "email"],
     });
 
-    // 🔁 Handle Google response
+    // Handle Google response
     useEffect(() => {
         if (response?.type === "success") {
             const { id_token } = response.params;
             const credential = GoogleAuthProvider.credential(id_token);
             signInWithCredential(auth, credential).catch(() =>
-                setError("Erreur Google Sign-In")
+                setError("Google Sign-In Error")
             );
         }
     }, [response]);
@@ -52,7 +53,7 @@ export default function LoginScreen() {
         try {
             await signInWithEmailAndPassword(auth, email, password);
         } catch (e) {
-            setError("Email ou mot de passe incorrect");
+            setError("Incorrect email or password");
         } finally {
             setLoading(false);
         }
@@ -64,123 +65,189 @@ export default function LoginScreen() {
         try {
             await createUserWithEmailAndPassword(auth, email, password);
         } catch (e) {
-            setError("Compte déjà existant ou mot de passe faible");
+            setError("Account already exists or weak password");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <View
-            style={{
-                flex: 1,
-                
-                justifyContent: "center",
-                padding: 24,
-            }}
-        >
-            <Text
-                style={{
-                    fontSize: 28,
-                    fontWeight: "bold",
-                    marginBottom: 20,
-                    textAlign: "center",
-                }}
-            >
-                Connexion
-            </Text>
+        <View style={styles.container}>
+            <Text style={styles.title}>🔐 Login</Text>
+            <Text style={styles.subtitle}>Access your CyberNews account</Text>
 
             {error !== "" && (
-                <Text style={{ color: "red", marginBottom: 10, textAlign: "center" }}>
+                <Text style={styles.errorText}>
                     {error}
                 </Text>
             )}
 
-            <TextInput
-                placeholder="Email"
-                placeholderTextColor="#999"
-                value={email}
-                onChangeText={setEmail}
-                style={{
-                    borderWidth: 1,
-                    borderColor: "#ccc",
-                    borderRadius: 8,
-                    padding: 12,
-                    marginBottom: 12,
-                }}
-            />
+            <View style={styles.inputContainer}>
+                <TextInput
+                    placeholder="Email"
+                    placeholderTextColor="#999"
+                    value={email}
+                    onChangeText={setEmail}
+                    style={styles.input}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                />
 
-            <TextInput
-                placeholder="Mot de passe"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={{
-                    borderWidth: 1,
-                    borderColor: "#ccc",
-                    borderRadius: 8,
-                    padding: 12,
-                    marginBottom: 20,
-                }}
-            />
+                <TextInput
+                    placeholder="Password"
+                    placeholderTextColor="#999"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    style={styles.input}
+                />
+            </View>
 
             {loading ? (
-                <ActivityIndicator />
+                <ActivityIndicator size="large" color="#007AFF" />
             ) : (
-                <>
+                <View style={styles.buttonContainer}>
                     <TouchableOpacity
                         onPress={login}
-                        style={{
-                            padding: 14,
-                            borderRadius: 8,
-                            marginBottom: 10,
-                        }}
+                        style={styles.primaryButton}
                     >
-                        <Text style={{ color: "#fff", textAlign: "center" }}>
-                            Se connecter
+                        <Text style={styles.primaryButtonText}>
+                            Sign In
                         </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={register}
-                        style={{
-                            borderWidth: 1,
-                            padding: 14,
-                            borderRadius: 8,
-                            marginBottom: 20,
-                        }}
+                        style={styles.secondaryButton}
                     >
-                        <Text
-                            style={{
-                                textAlign: "center",
-                            }}
-                        >
-                            Créer un compte
+                        <Text style={styles.secondaryButtonText}>
+                            Create Account
                         </Text>
                     </TouchableOpacity>
+
+                    <View style={styles.divider}>
+                        <View style={styles.dividerLine} />
+                        <Text style={styles.dividerText}>or</Text>
+                        <View style={styles.dividerLine} />
+                    </View>
 
                     <TouchableOpacity
                         disabled={!request}
                         onPress={() => promptAsync()}
-                        style={{
-                            backgroundColor: "#DB4437",
-                            padding: 14,
-                            borderRadius: 8,
-                        }}
+                        style={styles.googleButton}
                     >
-                        <Text style={{ color: "#fff", textAlign: "center" }}>
-                            Continuer avec Google
+                        <Text style={styles.googleButtonText}>
+                            Continue with Google
                         </Text>
                     </TouchableOpacity>
-                </>
+                </View>
             )}
 
-            <TouchableOpacity  style={{ marginTop: 30 }}>
-                <Text style={{ textAlign: "center"}}>
-                    Changer le thème
-                </Text>
-            </TouchableOpacity>
+            <Text style={styles.footerText}>
+                By signing in, you agree to our Terms and Privacy Policy
+            </Text>
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        padding: 24,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        textAlign: 'center',
+        color: '#1a1a1a',
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#666',
+        marginBottom: 32,
+        textAlign: 'center',
+    },
+    errorText: {
+        color: '#FF3B30',
+        marginBottom: 16,
+        textAlign: 'center',
+        backgroundColor: '#FF3B30' + '10',
+        padding: 12,
+        borderRadius: 8,
+    },
+    inputContainer: {
+        marginBottom: 24,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#E5E5EA',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        fontSize: 16,
+        backgroundColor: '#f9f9f9',
+    },
+    buttonContainer: {
+        gap: 12,
+    },
+    primaryButton: {
+        backgroundColor: '#007AFF',
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    primaryButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    secondaryButton: {
+        backgroundColor: '#fff',
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#007AFF',
+    },
+    secondaryButtonText: {
+        color: '#007AFF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 16,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#E5E5EA',
+    },
+    dividerText: {
+        marginHorizontal: 12,
+        color: '#999',
+        fontSize: 14,
+    },
+    googleButton: {
+        backgroundColor: '#DB4437',
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    googleButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    footerText: {
+        fontSize: 12,
+        color: '#999',
+        textAlign: 'center',
+        marginTop: 32,
+        lineHeight: 18,
+    },
+});

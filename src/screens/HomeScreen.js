@@ -53,7 +53,7 @@ export default function HomeScreen({ navigation }) {
         return hasImage && isCyber;
       });
       
-      setNews(filteredArticles.slice(0, 20)); // Get first 20 filtered articles
+      setNews(filteredArticles.slice(0, 100)); // Get first 20 filtered articles
     } else {
       setError(result.error);
     }
