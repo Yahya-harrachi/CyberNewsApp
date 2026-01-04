@@ -6,70 +6,65 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Image
+  Image,
+  RefreshControl,
+  Dimensions,
+  StatusBar
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { searchNews } from '../services/newsApi';
+
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchNews();
   }, []);
 
-  // Keywords to filter cyber-related news
-  const cyberKeywords = [
-    'cyber', 'cybersecurity', 'hacking', 'hacker', 'malware', 
-    'ransomware', 'data breach', 'phishing', 'security breach',
-    'vulnerability', 'exploit', 'ddos', 'encryption', 'firewall',
-    'zero-day', 'botnet', 'spyware', 'trojan', 'virus',
-    'infosec', 'netsec', 'aptsecurity', 'threat', 'attack',
-    'password', 'authentication', 'vpn', 'ssl', 'tls'
-  ];
-
-  // Function to check if article is cyber-related
-  const isCyberRelated = (article) => {
-    const searchText = `${article.title} ${article.description || ''} ${article.content || ''}`.toLowerCase();
-    
-    return cyberKeywords.some(keyword => searchText.includes(keyword.toLowerCase()));
-  };
-
   const fetchNews = async () => {
     setLoading(true);
     setError(null);
 
-    // Search for cybersecurity news
     const result = await searchNews('cybersecurity');
 
     if (result.success) {
-      // Filter articles that:
-      // 1. Have images
-      // 2. Are actually cyber-related (double-check with keywords)
-      const filteredArticles = result.articles.filter(article => {
-        const hasImage = article.urlToImage && article.urlToImage !== null;
-        const isCyber = isCyberRelated(article);
-        return hasImage && isCyber;
-      });
-      
-      setNews(filteredArticles.slice(0, 100)); // Get first 20 filtered articles
+      const filteredArticles = result.articles.filter(
+        article => article.urlToImage && article.urlToImage !== null
+      );
+      setNews(filteredArticles.slice(0, 20));
     } else {
       setError(result.error);
     }
     setLoading(false);
+    setRefreshing(false);
   };
 
-  const handleArticlePress = (article) => {
-    console.log('Navigating to article:', article.title);
-    navigation.navigate('ArticleDetail', { article });
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchNews();
   };
 
-  if (loading) {
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading cyber news...</Text>
+        <ActivityIndicator size="large" color="#6366F1" />
+        <Text style={styles.loadingText}>Loading latest news...</Text>
       </View>
     );
   }
@@ -77,204 +72,455 @@ export default function HomeScreen({ navigation }) {
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>❌ Error: {error}</Text>
-        <Text style={styles.errorHint}>
-          Note: Free NewsAPI limits requests. Try again in a moment.
-        </Text>
-        <TouchableOpacity style={styles.button} onPress={fetchNews}>
-          <Text style={styles.buttonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (news.length === 0) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>🔍 No cyber news with images found</Text>
-        <Text style={styles.emptyHint}>
-          Try refreshing to load new articles
-        </Text>
-        <TouchableOpacity style={styles.button} onPress={fetchNews}>
-          <Text style={styles.buttonText}>Refresh</Text>
+        <View style={styles.errorIcon}>
+          <Ionicons name="cloud-offline-outline" size={64} color="#EF4444" />
+        </View>
+        <Text style={styles.errorText}>Oops! Something went wrong</Text>
+        <Text style={styles.errorSubtext}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchNews}>
+          <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      
+      {/* Animated Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>🔐 CyberNews</Text>
-        <Text style={styles.subtitle}>Latest cybersecurity & tech security news</Text>
-        <Text style={styles.count}>{news.length} articles found</Text>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.greeting}>Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}</Text>
+            <Text style={styles.headerTitle}>Stay Secure 🛡️</Text>
+          </View>
+          <TouchableOpacity style={styles.profileButton}>
+            <View style={styles.profileIcon}>
+              <Ionicons name="person" size={20} color="#6366F1" />
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {news.map((article, index) => (
-        <TouchableOpacity
-          key={`${article.url}-${index}`}
-          style={styles.card}
-          onPress={() => handleArticlePress(article)}
-        >
-          <Image
-            source={{ uri: article.urlToImage }}
-            style={styles.cardImage}
-            resizeMode="cover"
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#6366F1"
           />
-          <View style={styles.cyberBadge}>
-            <Text style={styles.cyberBadgeText}>🛡️ CYBER</Text>
-          </View>
-          <Text style={styles.cardTitle}>{article.title}</Text>
-          <Text style={styles.cardSource}>{article.source.name}</Text>
-          <Text style={styles.cardDate}>
-            {new Date(article.publishedAt).toLocaleDateString()}
-          </Text>
-        </TouchableOpacity>
-      ))}
+        }
+      >
+        {/* Trending Badge */}
+        <View style={styles.trendingBadge}>
+          <Ionicons name="flame" size={16} color="#EF4444" />
+          <Text style={styles.trendingText}>Trending Now</Text>
+        </View>
 
-      <TouchableOpacity style={styles.refreshButton} onPress={fetchNews}>
-        <Text style={styles.refreshButtonText}>🔄 Refresh News</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        {/* Premium Hero Card */}
+        {news[0] && (
+          <TouchableOpacity 
+            style={styles.heroCard}
+            activeOpacity={0.95}
+            onPress={() => navigation.navigate('ArticleDetail', { article: news[0] })}
+          >
+            <Image
+              source={{ uri: news[0].urlToImage }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+            <View style={styles.heroOverlay}>
+              <View style={styles.heroTop}>
+                <View style={styles.liveBadge}>
+                  <View style={styles.liveIndicator} />
+                  <Text style={styles.liveText}>LIVE</Text>
+                </View>
+              </View>
+              <View style={styles.heroBottom}>
+                <View style={styles.categoryPill}>
+                  <Ionicons name="shield-checkmark" size={14} color="#fff" />
+                  <Text style={styles.categoryText}>Cybersecurity</Text>
+                </View>
+                <Text style={styles.heroTitle} numberOfLines={3}>
+                  {news[0].title}
+                </Text>
+                <View style={styles.heroMeta}>
+                  <View style={styles.sourceInfo}>
+                    <View style={styles.sourceDot} />
+                    <Text style={styles.heroSource}>{news[0].source.name}</Text>
+                  </View>
+                  <Text style={styles.heroTime}>
+                    {formatTimeAgo(news[0].publishedAt)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Latest Stories Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Latest Stories</Text>
+            <View style={styles.countBadge}>
+              <Text style={styles.countText}>{news.length - 1}</Text>
+            </View>
+          </View>
+
+          {news.slice(1, 15).map((article, index) => (
+            <TouchableOpacity 
+              key={`${article.url}-${index}`}
+              style={styles.storyCard}
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('ArticleDetail', { article })}
+            >
+              <View style={styles.storyLeft}>
+                <View style={styles.storyNumber}>
+                  <Text style={styles.numberText}>{(index + 1).toString().padStart(2, '0')}</Text>
+                </View>
+                <View style={styles.storyInfo}>
+                  <View style={styles.storyTags}>
+                    <View style={styles.tag}>
+                      <Text style={styles.tagText}>Security</Text>
+                    </View>
+                    <Text style={styles.storyTime}>{formatTimeAgo(article.publishedAt)}</Text>
+                  </View>
+                  <Text style={styles.storyTitle} numberOfLines={2}>
+                    {article.title}
+                  </Text>
+                  <Text style={styles.storySource}>{article.source.name}</Text>
+                </View>
+              </View>
+              <Image
+                source={{ uri: article.urlToImage }}
+                style={styles.storyImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 16,
+    backgroundColor: '#FAFAFA',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FAFAFA',
     padding: 20,
   },
-  header: {
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  errorIcon: {
     marginBottom: 16,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#1a1a1a',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
+  errorText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
     marginBottom: 8,
   },
-  count: {
-    fontSize: 12,
-    color: '#007AFF',
+  errorSubtext: {
+    fontSize: 14,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 40,
+  },
+  retryButton: {
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '600',
   },
-  card: {
+  header: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    position: 'relative',
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    lineHeight: 22,
-  },
-  cardSource: {
-    fontSize: 14,
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  cardDate: {
-    fontSize: 12,
-    color: '#666',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  cardImage: {
-    width: '100%',
-    height: 180,
-    borderRadius: 8,
-    marginBottom: 12,
+  greeting: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '500',
+    marginBottom: 4,
   },
-  cyberBadge: {
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1E293B',
+    letterSpacing: -0.5,
+  },
+  profileButton: {
+    padding: 4,
+  },
+  profileIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    paddingTop: 20,
+    paddingBottom: 30,
+  },
+  trendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginLeft: 20,
+    marginBottom: 16,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  trendingText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  heroCard: {
+    marginHorizontal: 20,
+    height: 380,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
     position: 'absolute',
-    top: 24,
-    right: 24,
-    backgroundColor: 'rgba(0, 122, 255, 0.9)',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 24,
+    justifyContent: 'space-between',
+  },
+  heroTop: {
+    alignItems: 'flex-end',
+  },
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  liveIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#fff',
+  },
+  liveText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  heroBottom: {
+    gap: 12,
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(99, 102, 241, 0.95)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  categoryText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  heroTitle: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    lineHeight: 34,
+    letterSpacing: -0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  heroMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sourceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sourceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  heroSource: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  heroTime: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  section: {
+    marginTop: 32,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1E293B',
+    letterSpacing: -0.5,
+  },
+  countBadge: {
+    backgroundColor: '#6366F1',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  countText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  storyCard: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  storyLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 14,
+    marginRight: 16,
+  },
+  storyNumber: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  numberText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#64748B',
+  },
+  storyInfo: {
+    flex: 1,
+    gap: 8,
+  },
+  storyTags: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  tag: {
+    backgroundColor: '#EEF2FF',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
-  },
-  cyberBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#FF3B30',
-    textAlign: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 40,
-  },
-  errorHint: {
-    fontSize: 13,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 40,
-    fontWeight: '600',
-  },
-  emptyHint: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 40,
-  },
-  refreshButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
     borderRadius: 8,
-    marginTop: 8,
-    marginBottom: 32,
-    alignItems: 'center',
   },
-  refreshButtonText: {
-    color: '#fff',
+  tagText: {
+    color: '#6366F1',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  storyTime: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  storyTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#1E293B',
+    lineHeight: 22,
+    letterSpacing: -0.3,
+  },
+  storySource: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  storyImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
   },
 });
