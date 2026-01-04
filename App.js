@@ -10,6 +10,7 @@ import { AuthProvider, AuthContext } from './Context/AuthContext';
 
 // Auth Screens
 import LoginScreen from './src/screens/LoginScreen';
+import CreateAccountScreen from './src/screens/CreateAccount'; // Add this import
 
 // Main App Screens
 import HomeScreen from './src/screens/HomeScreen';
@@ -127,11 +128,17 @@ function AppStack() {
   );
 }
 
-// Auth Stack Navigator
+// Auth Stack Navigator - UPDATED to include CreateAccountScreen
 function AuthStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        presentation: 'modal', // Optional: gives a modal-like transition
+      }}
+    >
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
     </Stack.Navigator>
   );
 }
