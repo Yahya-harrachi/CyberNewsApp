@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -13,11 +13,21 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { fetchBookmarksFromStorage, removeBookmarkFromStorage } from './bookmarkStorage';
 import { useFocusEffect } from '@react-navigation/native';
+import { ThemeContext } from '../../Context/ThemeContext';
 
 export default function BookmarkScreen({ navigation }) {
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const themeContext = useContext(ThemeContext);
+  const mode = themeContext?.mode || 'light';
+  const theme = themeContext?.theme || {
+    background: '#FAFAFA',
+    text: '#1E293B',
+    card: '#ffffff',
+  };
+  const isDark = mode === 'dark';
 
   useFocusEffect(
     useCallback(() => {
@@ -67,7 +77,7 @@ export default function BookmarkScreen({ navigation }) {
 
   const renderBookmarkItem = ({ item, index }) => (
     <TouchableOpacity
-      style={styles.bookmarkCard}
+      style={[styles.bookmarkCard, { backgroundColor: theme.card }]}
       onPress={() => navigation.navigate('ArticleDetail', { article: item })}
       activeOpacity={0.9}
     >
@@ -96,12 +106,14 @@ export default function BookmarkScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.cardTitle} numberOfLines={2}>
+        <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={2}>
           {item.title}
         </Text>
 
         <View style={styles.cardMeta}>
-          <Text style={styles.cardSource}>{item.source?.name || 'Unknown'}</Text>
+          <Text style={[styles.cardSource, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+            {item.source?.name || 'Unknown'}
+          </Text>
           <View style={styles.dot} />
           <Text style={styles.cardDate}>
             {new Date(item.bookmarkedAt).toLocaleDateString('en-US', {
@@ -116,26 +128,26 @@ export default function BookmarkScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color="#6366F1" />
-        <Text style={styles.loadingText}>Loading bookmarks...</Text>
+        <Text style={[styles.loadingText, { color: theme.text }]}>Loading bookmarks...</Text>
       </View>
     );
   }
 
   if (bookmarks.length === 0) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Bookmarks</Text>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+        <View style={[styles.header, { backgroundColor: theme.card, borderBottomColor: isDark ? '#334155' : '#F1F5F9' }]}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Bookmarks</Text>
         </View>
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
             <Ionicons name="bookmark-outline" size={80} color="#CBD5E1" />
           </View>
-          <Text style={styles.emptyTitle}>No saved articles yet</Text>
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>No saved articles yet</Text>
+          <Text style={[styles.emptyText, { color: isDark ? '#94A3B8' : '#64748B' }]}>
             Start bookmarking articles to read them later
           </Text>
           <TouchableOpacity 
@@ -151,13 +163,15 @@ export default function BookmarkScreen({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.card, borderBottomColor: isDark ? '#334155' : '#F1F5F9' }]}>
         <View>
-          <Text style={styles.headerTitle}>Bookmarks</Text>
-          <Text style={styles.headerSubtitle}>{bookmarks.length} saved articles</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Bookmarks</Text>
+          <Text style={[styles.headerSubtitle, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+            {bookmarks.length} saved articles
+          </Text>
         </View>
         <View style={styles.countBadge}>
           <Text style={styles.countText}>{bookmarks.length}</Text>
@@ -180,22 +194,18 @@ export default function BookmarkScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748B',
     fontWeight: '500',
   },
   header: {
-    backgroundColor: '#fff',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
@@ -203,17 +213,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#1E293B',
     letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#64748B',
     marginTop: 4,
     fontWeight: '500',
   },
@@ -235,7 +242,6 @@ const styles = StyleSheet.create({
   },
   bookmarkCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 16,
     marginBottom: 16,
@@ -307,7 +313,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1E293B',
     lineHeight: 22,
     letterSpacing: -0.3,
   },
@@ -317,7 +322,6 @@ const styles = StyleSheet.create({
   },
   cardSource: {
     fontSize: 13,
-    color: '#64748B',
     fontWeight: '500',
   },
   dot: {
@@ -343,12 +347,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1E293B',
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 15,
-    color: '#64748B',
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 22,

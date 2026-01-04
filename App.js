@@ -1,29 +1,28 @@
-import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, View } from 'react-native';
 
-// Context
+// Import Providers
 import { AuthProvider, AuthContext } from './Context/AuthContext';
+import { ThemeProvider } from './Context/ThemeContext';
 
-// Auth Screens
+// Import Screens
 import LoginScreen from './src/screens/LoginScreen';
-import CreateAccountScreen from './src/screens/CreateAccount'; // Add this import
-
-// Main App Screens
+import CreateAccountScreen from './src/screens/CreateAccount';
 import HomeScreen from './src/screens/HomeScreen';
 import DiscoverScreen from './src/screens/DiscoverScreen';
 import BookmarkScreen from './src/screens/BookmarkScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ArticleDetailScreen from './src/screens/ArticleDetailScreen';
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Bottom Tab Navigator for Main App
-function MainTabNavigator() {
+// Tab Navigator Component
+function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -42,12 +41,12 @@ function MainTabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: '#6366F1',
+        tabBarInactiveTintColor: '#94A3B8',
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: '#ffffff',
           borderTopWidth: 1,
-          borderTopColor: '#E5E5EA',
+          borderTopColor: '#E2E8F0',
           paddingBottom: 5,
           paddingTop: 5,
           height: 60,
@@ -56,85 +55,23 @@ function MainTabNavigator() {
           fontSize: 12,
           fontWeight: '600',
         },
-        headerStyle: {
-          backgroundColor: '#fff',
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: '#E5E5EA',
-        },
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 20,
-        },
+        headerShown: false,
       })}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen}
-        options={{
-          headerTitle: '🛡️ CyberNews',
-        }}
-      />
-      <Tab.Screen 
-        name="Discover" 
-        component={DiscoverScreen}
-        options={{
-          headerTitle: '🔍 Discover',
-        }}
-      />
-      <Tab.Screen 
-        name="Bookmarks" 
-        component={BookmarkScreen}
-        options={{
-          headerTitle: '📖 My Bookmarks',
-        }}
-      />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen}
-        options={{
-          headerTitle: '👤 Profile',
-        }}
-      />
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} />
+      <Tab.Screen name="Bookmarks" component={BookmarkScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
 
-// Main Stack Navigator (includes MainTabs + ArticleDetail)
-function AppStack() {
+// Auth Navigator (Login/Signup)
+function AuthNavigator() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen 
-        name="MainTabs" 
-        component={MainTabNavigator}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="ArticleDetail" 
-        component={ArticleDetailScreen}
-        options={{
-          headerTitle: 'Article',
-          headerStyle: {
-            backgroundColor: '#fff',
-          },
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-          headerTintColor: '#007AFF',
-        }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Auth Stack Navigator - UPDATED to include CreateAccountScreen
-function AuthStack() {
-  return (
-    <Stack.Navigator 
-      screenOptions={{ 
+    <Stack.Navigator
+      screenOptions={{
         headerShown: false,
-        presentation: 'modal', // Optional: gives a modal-like transition
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />
@@ -143,22 +80,41 @@ function AuthStack() {
   );
 }
 
-// Root Navigator - Conditionally renders Auth or App based on user state
-function RootNavigator() {
-  const { user, loading } = React.useContext(AuthContext);
+// Main App Navigator
+function AppNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen 
+        name="ArticleDetail" 
+        component={ArticleDetailScreen}
+        options={{
+          presentation: 'modal',
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
 
-  // Show loading screen while checking auth state
+// Root Navigator - Handles Auth State
+function RootNavigator() {
+  const { user, loading } = useContext(AuthContext);
+
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFA' }}>
+        <ActivityIndicator size="large" color="#6366F1" />
       </View>
     );
   }
 
   return (
     <NavigationContainer>
-      {user ? <AppStack /> : <AuthStack />}
+      {user ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }
@@ -166,17 +122,10 @@ function RootNavigator() {
 // Main App Component
 export default function App() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-});
